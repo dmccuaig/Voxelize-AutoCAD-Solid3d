@@ -16,8 +16,8 @@ public static class Commands
 	public static Database CurrentDatabase => CurrentDocument.Database;
 	public static Editor CurrentEditor => CurrentDocument.Editor;
 
-	[CommandMethod("VoxelizeSolid")]
-	public static void VoxelizeSolidCommand()
+	[CommandMethod(nameof(VoxelizeSolid))]
+	public static void VoxelizeSolid()
 	{
 		// Prompt the user to select a solid
 		var options = new PromptEntityOptions("\nSelect a 3D solid: ");
@@ -59,11 +59,15 @@ public static class Commands
 				for (int zi = 0; zi < voxelModel.Voxels.GetLength(2); zi++)
 				{
 					var voxel = voxelModel.Voxels[xi, yi, zi];
+					if (voxel.Intersects == false)
+					{
+						continue;
+					}
+
 					Solid3d boxel = new Solid3d();
 
 					boxel.CreateBox(voxel.Extents.GetLengthX(), voxel.Extents.GetLengthY(), voxel.Extents.GetLengthZ());
 					boxel.TransformBy(Matrix3d.Displacement(Point3d.Origin.GetVectorTo(voxel.Extents.CenterPoint())));
-
 					acBlkTblRec.AppendEntity(boxel);
 					tr.AddNewlyCreatedDBObject(boxel, true);
 				}
@@ -73,11 +77,6 @@ public static class Commands
 		}
 
 		tr.Commit();
-
-	}
-
-	private static void DrawBox(VoxelModel.Voxel voxel)
-	{
 
 	}
 
