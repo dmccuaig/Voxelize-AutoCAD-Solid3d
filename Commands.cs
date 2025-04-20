@@ -3,6 +3,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
+using Voxelize.ExtensionMethods;
 using AcadApp = Autodesk.AutoCAD.ApplicationServices.Core.Application;
 
 [assembly: CommandClass(typeof(Voxelize.Commands))]
@@ -43,37 +44,28 @@ public static class Commands
 
 		using Transaction tr = CurrentDocument.Database.TransactionManager.StartTransaction();
 		using Solid3d? solid = tr.GetObject(result.ObjectId, OpenMode.ForRead) as Solid3d;
-
-		if (solid == null)
-		{
-			CurrentEditor.WriteMessage("\nInvalid selection.");
-			return;
-		}
+		if (solid == null) return;
 
 		var voxelModel = Voxelize.VoxelizeSolid(solid, voxelSize);
-		if (voxelModel is null)
-		{
-			return;
-		}
+		if (voxelModel is null) return;
 
-		// Get ModelSpace BTR
-		var acBlkTbl = tr.GetObject(CurrentDatabase.BlockTableId, OpenMode.ForRead) as BlockTable;
-		var acBlkTblRec = tr.GetObject(acBlkTbl[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
-		if (acBlkTblRec is null)
-		{
-			return;
-		}
+		var acBlkTblRec = tr.GetModelSpace(CurrentDatabase);
+		if (acBlkTblRec is null) return;
 
-		for(int xi = 0; xi < voxelModel.Vertices.GetLength(0); xi++)
+		for(int xi = 0; xi < voxelModel.Voxels.GetLength(0); xi++)
 		{
-			for(int yi = 0; yi < voxelModel.Vertices.GetLength(1); yi++)
+			for(int yi = 0; yi < voxelModel.Voxels.GetLength(1); yi++)
 			{
-				for (int zi = 0; zi < voxelModel.Vertices.GetLength(2); zi++)
+				for (int zi = 0; zi < voxelModel.Voxels.GetLength(2); zi++)
 				{
-					var vertex =  voxelModel.Vertices[xi, yi, zi];
-					var pt = new DBPoint(vertex);
-					acBlkTblRec.AppendEntity(pt);
-					tr.AddNewlyCreatedDBObject(pt, true);
+					var voxel = voxelModel.Voxels[xi, yi, zi];
+					Solid3d boxel = new Solid3d();
+
+					boxel.CreateBox(voxel.Extents.GetLengthX(), voxel.Extents.GetLengthY(), voxel.Extents.GetLengthZ());
+					boxel.TransformBy(Matrix3d.Displacement(Point3d.Origin.GetVectorTo(voxel.Extents.CenterPoint())));
+
+					acBlkTblRec.AppendEntity(boxel);
+					tr.AddNewlyCreatedDBObject(boxel, true);
 				}
 
 			}
@@ -83,4 +75,10 @@ public static class Commands
 		tr.Commit();
 
 	}
+
+	private static void DrawBox(VoxelModel.Voxel voxel)
+	{
+
+	}
+
 }
