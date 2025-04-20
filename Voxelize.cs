@@ -131,6 +131,9 @@ public class VoxelModel
 
 	public class Voxel
 		{
+			public readonly int Xi;
+			public readonly int Yi;
+			public readonly int Zi;
 			public readonly Extents3d Extents;
 
 			public Vertex V000;
@@ -147,6 +150,9 @@ public class VoxelModel
 
 			public Voxel(VoxelModel vm, int xi, int yi, int zi)
 			{
+				Xi = xi;
+				Yi = yi;
+				Zi = zi;
 				V000 = vm.Vertices[xi, yi, zi];
 				V001 = vm.Vertices[xi, yi, zi + 1];
 				V101 = vm.Vertices[xi + 1, yi, zi + 1];
