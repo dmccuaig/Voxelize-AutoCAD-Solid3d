@@ -12,4 +12,12 @@ public static class Extents3dExtensions
 	public static double GetLengthZ(this Extents3d extents) => extents.MaxPoint.Z - extents.MinPoint.Z;
 
 	public static double GetLongestEdge(this Extents3d extents3d) => Math.Max(Math.Max(extents3d.GetLengthX(), extents3d.GetLengthY()), Math.Max(extents3d.GetLengthY(), extents3d.GetLengthZ()));
+
+	public static Solid3d CreateBox(this Extents3d extents)
+	{
+		Solid3d box = new();
+		box.CreateBox(extents.GetLengthX(), extents.GetLengthY(), extents.GetLengthZ());
+		box.TransformBy(Matrix3d.Displacement(Point3d.Origin.GetVectorTo(extents.CenterPoint())));
+		return box;
+	}
 }

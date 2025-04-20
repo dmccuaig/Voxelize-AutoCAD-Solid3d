@@ -1,7 +1,6 @@
 ﻿using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
 using Voxelize.ExtensionMethods;
 using AcadApp = Autodesk.AutoCAD.ApplicationServices.Core.Application;
@@ -38,46 +37,40 @@ public static class Commands
 		PromptDoubleResult voxelSizeResult = CurrentEditor.GetDouble(voxelSizeOptions);
 		if (voxelSizeResult.Status != PromptStatus.OK) return;
 
-		// Get the voxel size.
-		double voxelSize = voxelSizeResult.Value;
+		VoxelizeSolid(result.ObjectId, voxelSizeResult.Value);
+	}
 
-
+	private static void VoxelizeSolid(ObjectId solidId, double voxelSize)
+	{
 		using Transaction tr = CurrentDocument.Database.TransactionManager.StartTransaction();
-		using Solid3d? solid = tr.GetObject(result.ObjectId, OpenMode.ForRead) as Solid3d;
+		var modelSpaceBtr = tr.GetModelSpace(CurrentDatabase);
+		if (modelSpaceBtr is null) return;
+
+		using Solid3d? solid = tr.GetObject(solidId, OpenMode.ForRead) as Solid3d;
 		if (solid == null) return;
 
+		VoxelizeSolid(solid, voxelSize, tr, modelSpaceBtr);
+
+		tr.Commit();
+	}
+
+	private static void VoxelizeSolid(Solid3d solid, double voxelSize, Transaction tr, BlockTableRecord modelSpaceBtr)
+	{
 		var voxelModel = Voxelize.VoxelizeSolid(solid, voxelSize);
 		if (voxelModel is null) return;
 
-		var acBlkTblRec = tr.GetModelSpace(CurrentDatabase);
-		if (acBlkTblRec is null) return;
-
-		for(int xi = 0; xi < voxelModel.Voxels.GetLength(0); xi++)
+		foreach (var voxel in voxelModel.AllVoxels)
 		{
-			for(int yi = 0; yi < voxelModel.Voxels.GetLength(1); yi++)
+			if (voxel.Intersects == false)
 			{
-				for (int zi = 0; zi < voxelModel.Voxels.GetLength(2); zi++)
-				{
-					var voxel = voxelModel.Voxels[xi, yi, zi];
-					if (voxel.Intersects == false)
-					{
-						continue;
-					}
-
-					Solid3d boxel = new Solid3d();
-
-					boxel.CreateBox(voxel.Extents.GetLengthX(), voxel.Extents.GetLengthY(), voxel.Extents.GetLengthZ());
-					boxel.TransformBy(Matrix3d.Displacement(Point3d.Origin.GetVectorTo(voxel.Extents.CenterPoint())));
-					acBlkTblRec.AppendEntity(boxel);
-					tr.AddNewlyCreatedDBObject(boxel, true);
-				}
-
+				continue;
 			}
 
+			Solid3d boxel = voxel.Extents.CreateBox();
+
+			modelSpaceBtr.AppendEntity(boxel);
+			tr.AddNewlyCreatedDBObject(boxel, true);
 		}
-
-		tr.Commit();
-
 	}
 
 }
