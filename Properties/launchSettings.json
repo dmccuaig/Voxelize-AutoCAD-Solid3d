@@ -5,8 +5,7 @@
     },
     "Acad": {
       "commandName": "Executable",
-      "executablePath": "C:\\Program Files\\Autodesk\\AutoCAD 2026\\acad.exe",
-      "commandLineArgs": "/nologo /b \"C:\\dev\\Voxelize\\LoadVoxelize.scr\""
+      "executablePath": "C:\\Program Files\\Autodesk\\AutoCAD 2026\\acad.exe"
     }
   }
 }

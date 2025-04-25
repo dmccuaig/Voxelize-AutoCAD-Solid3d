@@ -21,7 +21,7 @@ public static class Voxelize
 
 		var vm = new VoxelModel(voxelExtents, voxelEdgeCount, voxelEdgeLength);
 
-		Brep brep = new Brep(solid);
+		using Brep brep = new Brep(solid);
 		vm.DetermineInside(brep);
 
 		return vm;
